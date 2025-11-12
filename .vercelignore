@@ -1,0 +1,6 @@
+backend/
+*.pyc
+__pycache__/
+*.log
+.DS_Store
+
