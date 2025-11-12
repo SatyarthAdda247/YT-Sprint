@@ -7,6 +7,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userEmail, setUserEmail] = useState('')
   const [showAuth, setShowAuth] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   
   // Auth form
   const [emailInput, setEmailInput] = useState('')
@@ -22,6 +23,7 @@ function App() {
   
   // Items
   const [items, setItems] = useState([])
+  const [itemsLoading, setItemsLoading] = useState(false)
   
   // Modals
   const [showAddModal, setShowAddModal] = useState(false)
@@ -35,15 +37,19 @@ function App() {
   const [linkVerified, setLinkVerified] = useState(false)
 
   useEffect(() => {
-    const savedEmail = localStorage.getItem('userEmail')
-    if (savedEmail) {
-      axios.defaults.headers.common['X-User-Email'] = savedEmail
-      setUserEmail(savedEmail)
-      setIsLoggedIn(true)
-      setShowAuth(false)
-      loadOptions()
-      loadItems()
+    const initAuth = async () => {
+      const savedEmail = localStorage.getItem('userEmail')
+      if (savedEmail) {
+        axios.defaults.headers.common['X-User-Email'] = savedEmail
+        setUserEmail(savedEmail)
+        setIsLoggedIn(true)
+        setShowAuth(false)
+        await loadOptions()
+        await loadItems()
+      }
+      setIsLoading(false)
     }
+    initAuth()
   }, [])
 
   useEffect(() => {
@@ -52,7 +58,7 @@ function App() {
     }
   }, [vertical, category, subcategory, userOnly, isLoggedIn])
 
-  const handleAuth = (e) => {
+  const handleAuth = async (e) => {
     e.preventDefault()
     
     // Validate email domain
@@ -64,6 +70,7 @@ function App() {
       return
     }
     
+    setIsLoading(true)
     localStorage.setItem('userEmail', emailInput)
     axios.defaults.headers.common['X-User-Email'] = emailInput
     
@@ -71,8 +78,9 @@ function App() {
     setIsLoggedIn(true)
     setShowAuth(false)
     
-    loadOptions()
-    loadItems()
+    await loadOptions()
+    await loadItems()
+    setIsLoading(false)
   }
 
   const handleLogout = () => {
@@ -100,11 +108,15 @@ function App() {
 
   const loadItems = async () => {
     try {
+      setItemsLoading(true)
       const params = { vertical, category, subcategory, user_only: userOnly }
       const { data } = await axios.get(`${API_BASE}/metadata`, { params })
-      setItems(data.items)
+      setItems(data.items || [])
     } catch (err) {
       console.error('Failed to load items:', err)
+      setItems([])
+    } finally {
+      setItemsLoading(false)
     }
   }
 
@@ -279,6 +291,17 @@ function App() {
     }
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (showAuth) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -420,7 +443,18 @@ function App() {
 
         {/* Items Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {items.map(item => (
+          {itemsLoading ? (
+            <div className="col-span-full flex justify-center items-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-2"></div>
+                <p className="text-gray-600 text-sm">Loading items...</p>
+              </div>
+            </div>
+          ) : items.length === 0 ? (
+            <div className="col-span-full text-center py-12 text-gray-500">
+              No items found
+            </div>
+          ) : items.map(item => (
             <div key={item.id} className="bg-white rounded-lg shadow hover:shadow-md transition p-4">
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-semibold text-gray-800 text-lg">{item.title || 'Untitled'}</h3>
@@ -511,12 +545,6 @@ function App() {
             </div>
           ))}
         </div>
-        
-        {items.length === 0 && (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <p className="text-gray-500">No items found. Add your first item to get started.</p>
-          </div>
-        )}
       </div>
 
       {/* Add/Edit Modal */}
