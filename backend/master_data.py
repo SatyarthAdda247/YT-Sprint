@@ -116,3 +116,15 @@ def get_all_subjects():
         all_subjects.update(data.get("subjects", []))
     return sorted(list(all_subjects))
 
+# Content sub-categories for when Content Type is "Content"
+CONTENT_SUBCATEGORIES = [
+    "Conceptual Insights",
+    "Tips & Tricks / Shortcuts",
+    "PYQs / Practice Questions",
+    "Science / GK Facts"
+]
+
+def get_content_subcategories():
+    """Get content sub-categories"""
+    return CONTENT_SUBCATEGORIES
+

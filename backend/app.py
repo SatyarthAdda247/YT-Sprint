@@ -10,7 +10,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import boto3
 from dotenv import load_dotenv
-from master_data import get_all_verticals, get_exams_by_vertical, get_subjects_by_vertical
+from master_data import get_all_verticals, get_exams_by_vertical, get_subjects_by_vertical, get_content_subcategories
 
 load_dotenv('../.env.local')
 
@@ -180,16 +180,19 @@ def get_options():
     for vertical in verticals:
         categories_by_vertical[vertical] = get_exams_by_vertical(vertical)
     
-    # Build subcategories (subjects) by category/exam
-    # For simplicity, we'll map subjects to vertical level
-    subcategories_by_vertical = {}
+    # Build subjects by vertical
+    subjects_by_vertical = {}
     for vertical in verticals:
-        subcategories_by_vertical[vertical] = get_subjects_by_vertical(vertical)
+        subjects_by_vertical[vertical] = get_subjects_by_vertical(vertical)
+    
+    # Get content subcategories
+    content_subcategories = get_content_subcategories()
     
     return jsonify({
         'verticals': verticals,
         'categories_by_vertical': categories_by_vertical,
-        'subcategories_by_vertical': subcategories_by_vertical
+        'subjects_by_vertical': subjects_by_vertical,
+        'content_subcategories': content_subcategories
     })
 
 @app.route('/api/metadata', methods=['GET'])
@@ -251,44 +254,62 @@ def create_item():
     content_type = request.form.get('contentType', '').strip()
     vertical = request.form.get('vertical', '').strip()
     exam = request.form.get('exam', '').strip()
+    subject = request.form.get('subject', '').strip()
     status = request.form.get('status', '').strip()
+    content_subcategory = request.form.get('contentSubcategory', '').strip()
     
     # Validate email domain
     allowed_domains = ['adda247.com', 'addaeducation.com', 'studyiq.com']
     if not any(email.endswith(f'@{domain}') for domain in allowed_domains):
         return jsonify({'error': 'Only adda247.com, addaeducation.com, studyiq.com emails are allowed'}), 400
     
-    if not verification_link or not vertical or not content_type or not exam or not status:
-        return jsonify({'error': 'All fields are required'}), 400
+    if not vertical or not content_type or not exam or not status:
+        return jsonify({'error': 'All required fields must be filled'}), 400
     
-    # Extract YouTube ID
-    youtube_id = extract_youtube_id(verification_link)
-    if not youtube_id:
-        return jsonify({'error': 'Invalid YouTube URL'}), 400
+    # If status is "Re-edit", video file is required
+    video_file = request.files.get('videoFile')
+    if status == 'Re-edit' and not video_file:
+        return jsonify({'error': 'Video file is required for Re-edit status'}), 400
     
-    # Check for duplicate
-    index = get_index()
-    for item in index.get('items', []):
-        if item.get('youtube_id') == youtube_id:
-            return jsonify({'error': f'This video already exists! Uploaded by: {item.get("created_by")}'}), 409
+    # Extract YouTube ID from verification link (if provided)
+    youtube_id = None
+    if verification_link:
+        youtube_id = extract_youtube_id(verification_link)
+        if not youtube_id:
+            return jsonify({'error': 'Invalid YouTube URL'}), 400
+        
+        # Check for duplicate
+        index = get_index()
+        for item in index.get('items', []):
+            if item.get('youtube_id') == youtube_id:
+                return jsonify({'error': f'This video already exists! Uploaded by: {item.get("created_by")}'}), 409
     
     # Create item
     item_id = str(uuid.uuid4())
     item = {
         'id': item_id,
         'email': email,
-        'verificationLink': verification_link,
+        'verificationLink': verification_link or '',
         'youtube_id': youtube_id,
         'contentType': content_type,
         'vertical': vertical,
         'exam': exam,
+        'subject': subject,
         'status': status,
+        'contentSubcategory': content_subcategory,
         'files': [],
+        'videoFile': None,
         'created_by': request.user_name,
         'created_at': datetime.now().isoformat()
     }
     
-    # Handle file uploads
+    # Handle video file upload (for Re-edit status)
+    if video_file and video_file.filename:
+        video_key = upload_file_to_s3(video_file, item_id, request.user_name)
+        if video_key:
+            item['videoFile'] = video_key
+    
+    # Handle other file uploads
     files = request.files.getlist('files')
     for file in files:
         if file.filename:
@@ -300,6 +321,7 @@ def create_item():
     put_s3_object(f"metadata/items/{item_id}.json", item)
     
     # Update index
+    index = get_index()
     index['items'].append(item)
     update_index(index)
     

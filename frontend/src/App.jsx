@@ -13,7 +13,7 @@ function App() {
   const [authForm, setAuthForm] = useState({ name: '', password: '' })
   
   // Options
-  const [options, setOptions] = useState({ verticals: [], categories_by_vertical: {}, subcategories_by_category: {} })
+  const [options, setOptions] = useState({ verticals: [], categories_by_vertical: {}, subjects_by_vertical: {}, content_subcategories: [] })
   
   // Filters
   const [vertical, setVertical] = useState('')
@@ -31,7 +31,7 @@ function App() {
   // Form
   const [itemForm, setItemForm] = useState({
     email: '', verificationLink: '', contentType: '', vertical: '', 
-    exam: '', status: '', files: []
+    exam: '', subject: '', status: '', contentSubcategory: '', videoFile: null, files: []
   })
   const [linkVerified, setLinkVerified] = useState(false)
 
@@ -129,9 +129,18 @@ function App() {
   const handleAddItem = async (e) => {
     e.preventDefault()
     
-    if (!linkVerified) {
-      alert('Please verify the link first by clicking "Check Link"')
-      return
+    // For Re-edit status, verification link is optional but video file is required
+    if (itemForm.status === 'Re-edit') {
+      if (!itemForm.videoFile) {
+        alert('Please upload a video file for Re-edit status')
+        return
+      }
+    } else {
+      // For other statuses, verification link is required
+      if (!linkVerified) {
+        alert('Please verify the link first by clicking "Check Link"')
+        return
+      }
     }
     
     const formData = new FormData()
@@ -140,9 +149,16 @@ function App() {
     formData.append('contentType', itemForm.contentType)
     formData.append('vertical', itemForm.vertical)
     formData.append('exam', itemForm.exam)
+    formData.append('subject', itemForm.subject)
     formData.append('status', itemForm.status)
+    formData.append('contentSubcategory', itemForm.contentSubcategory)
     
-    Array.from(itemForm.files).forEach(file => {
+    // Add video file if status is Re-edit
+    if (itemForm.videoFile) {
+      formData.append('videoFile', itemForm.videoFile)
+    }
+    
+    Array.from(itemForm.files || []).forEach(file => {
       formData.append('files', file)
     })
     
@@ -159,7 +175,7 @@ function App() {
       
       setShowAddModal(false)
       setEditingItem(null)
-      setItemForm({ email: '', verificationLink: '', contentType: '', vertical: '', exam: '', status: '', files: [] })
+      setItemForm({ email: '', verificationLink: '', contentType: '', vertical: '', exam: '', subject: '', status: '', contentSubcategory: '', videoFile: null, files: [] })
       setLinkVerified(false)
       
       loadOptions()
@@ -189,7 +205,10 @@ function App() {
       contentType: item.contentType || '',
       vertical: item.vertical,
       exam: item.exam || '',
+      subject: item.subject || '',
       status: item.status || '',
+      contentSubcategory: item.contentSubcategory || '',
+      videoFile: null,
       files: []
     })
     setLinkVerified(true)
@@ -429,12 +448,15 @@ function App() {
               <div className="space-y-1 text-sm mb-3">
                 <p className="text-gray-600"><span className="font-medium">Vertical:</span> {item.vertical}</p>
                 {item.exam && <p className="text-gray-600"><span className="font-medium">Exam:</span> {item.exam}</p>}
+                {item.subject && <p className="text-gray-600"><span className="font-medium">Subject:</span> {item.subject}</p>}
                 {item.contentType && <p className="text-gray-600"><span className="font-medium">Type:</span> {item.contentType}</p>}
+                {item.contentSubcategory && <p className="text-gray-600"><span className="font-medium">Sub-category:</span> {item.contentSubcategory}</p>}
                 {item.status && (
                   <span className={`inline-block px-2 py-1 text-xs rounded ${
                     item.status === 'Published' ? 'bg-green-100 text-green-800' :
                     item.status === 'Final' ? 'bg-blue-100 text-blue-800' :
                     item.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                    item.status === 'Re-edit' ? 'bg-orange-100 text-orange-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
                     {item.status}
@@ -458,6 +480,18 @@ function App() {
               
               {item.email && (
                 <p className="text-xs text-gray-500">Email: {item.email}</p>
+              )}
+              
+              {item.videoFile && (
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-gray-500 mb-1">📹 Video File (Re-edit):</p>
+                  <button
+                    onClick={() => getFileDownloadUrl(item.id, item.videoFile)}
+                    className="text-xs text-purple-600 hover:text-purple-700 block truncate"
+                  >
+                    {item.videoFile.split('/').pop()}
+                  </button>
+                </div>
               )}
               
               {item.files && item.files.length > 0 && (
@@ -607,6 +641,39 @@ function App() {
                 </div>
                 
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Subject *</label>
+                  <select
+                    value={itemForm.subject}
+                    onChange={(e) => setItemForm({ ...itemForm, subject: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    disabled={!itemForm.vertical}
+                    required
+                  >
+                    <option value="">Select Subject</option>
+                    {itemForm.vertical && options.subjects_by_vertical?.[itemForm.vertical]?.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {itemForm.contentType === 'Content' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Content Sub-category *</label>
+                    <select
+                      value={itemForm.contentSubcategory}
+                      onChange={(e) => setItemForm({ ...itemForm, contentSubcategory: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Select Sub-category</option>
+                      {options.content_subcategories?.map(sc => (
+                        <option key={sc} value={sc}>{sc}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
                   <select
                     value={itemForm.status}
@@ -617,10 +684,25 @@ function App() {
                     <option value="">Select Status</option>
                     <option value="Draft">Draft</option>
                     <option value="Pending">Pending</option>
+                    <option value="Re-edit">Re-edit</option>
                     <option value="Final">Final</option>
                     <option value="Published">Published</option>
                   </select>
                 </div>
+                
+                {itemForm.status === 'Re-edit' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">📹 Upload Video File *</label>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={(e) => setItemForm({ ...itemForm, videoFile: e.target.files[0] })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Video will be uploaded to S3 for re-editing</p>
+                  </div>
+                )}
                 
                 <div className="flex gap-3 pt-4">
                   <button
