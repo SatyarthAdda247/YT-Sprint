@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: yt-sprint-backend
+    env: python
+    region: singapore
+    plan: free
+    branch: main
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: ap-south-1
+      - key: S3_BUCKET_NAME
+        sync: false
+    healthCheckPath: /api/options
+    headers:
+      - path: /*
+        name: Access-Control-Allow-Origin
+        value: '*'
+

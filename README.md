@@ -1,6 +1,14 @@
-# Content Dashboard
+# YT Sprint Dashboard
 
-A full-stack web application for managing content items with hierarchical categorization (vertical → category → subcategory), file uploads to S3, and user authentication.
+A full-stack web application for managing YouTube Shorts content with hierarchical categorization (vertical → exam → subject), file uploads to S3, and email-based authentication.
+
+## 🚀 Quick Start
+
+**Backend NOT deployed yet?** → See [DEPLOY_NOW.md](DEPLOY_NOW.md)
+
+**Already deployed?** → Check [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)
+
+**Production issues?** → See [VERCEL_FIX.md](VERCEL_FIX.md)
 
 ## Features
 
@@ -350,25 +358,59 @@ scriptiq-content/
             └── 1699800100_video.mp4
 ```
 
+## 🌐 Deployment
+
+### Current Status
+
+- ✅ **Frontend**: Deployed on Vercel at https://yt-sprint.vercel.app
+- ❌ **Backend**: NOT DEPLOYED (causing verticals to not load)
+
+### Deploy Backend Now
+
+Choose one platform:
+
+1. **Render** (Easiest) - [DEPLOY_NOW.md](DEPLOY_NOW.md#-option-1-one-click-deploy-render---easiest)
+2. **Railway** (Fastest) - [DEPLOY_NOW.md](DEPLOY_NOW.md#-option-2-railway-fastest---5-minutes)
+3. **Heroku** (Production) - [DEPLOY_NOW.md](DEPLOY_NOW.md#-option-3-heroku-requires-credit-card)
+
+### After Backend Deployment
+
+1. Test: `./test-backend.sh https://your-backend-url.com`
+2. Update Vercel: `./update-vercel.sh https://your-backend-url.com/api`
+3. Verify: Open https://yt-sprint.vercel.app
+
+See [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for detailed verification steps.
+
+## 📚 Documentation
+
+- 📄 [DEPLOY_NOW.md](DEPLOY_NOW.md) - Deploy backend step-by-step
+- 📄 [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) - Complete deployment checklist
+- 📄 [VERCEL_FIX.md](VERCEL_FIX.md) - Fix Vercel production issues
+- 📄 [ENV_VARIABLES.md](ENV_VARIABLES.md) - All environment variables explained
+- 📄 [VERTICALS_STRUCTURE.md](VERTICALS_STRUCTURE.md) - All verticals/exams/subjects
+
+## 🔧 Scripts
+
+- `./deploy-backend.sh` - Deploy backend to Railway
+- `./update-vercel.sh <API_URL>` - Update Vercel with backend URL
+- `./test-backend.sh <BACKEND_URL>` - Test backend deployment
+
 ## Security Considerations
 
 ### Production Deployment
 
-1. **Environment Variables**: Use secure secret manager (AWS Secrets Manager, HashiCorp Vault)
-2. **JWT Secret**: Change `JWT_SECRET` to a strong random value
-3. **Database**: Replace in-memory `users_db` with PostgreSQL/MongoDB
-4. **HTTPS**: Use SSL/TLS certificates
-5. **CORS**: Restrict CORS to specific domains
-6. **Rate Limiting**: Add rate limiting to prevent abuse
-7. **File Validation**: Add virus scanning for uploaded files
-8. **Private Network**: Deploy backend in VPC if auth is disabled
+1. **Environment Variables**: Set in deployment platform (Railway/Render/Heroku)
+2. **AWS Credentials**: Use IAM user with S3-only permissions
+3. **CORS**: Already configured for all origins (adjust in production)
+4. **Email Validation**: Only @adda247.com/@addaeducation.com/@studyiq.com allowed
+5. **File Uploads**: Validated by extension and stored in S3
 
 ### Current Implementation
 
-- In-memory user storage (development only)
-- Simple JWT authentication
-- File uploads validated by filename only
-- No rate limiting
+- Email-based authentication (no passwords stored)
+- S3 for all file storage and metadata
+- User ownership validation on edit/delete
+- CORS enabled for all origins
 
 ## Testing
 
