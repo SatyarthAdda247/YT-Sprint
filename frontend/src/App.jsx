@@ -87,7 +87,12 @@ function App() {
   const loadOptions = async () => {
     try {
       const { data } = await axios.get(`${API_BASE}/options`)
-      setOptions(data)
+      setOptions({
+        verticals: data.verticals || [],
+        categories_by_vertical: data.categories_by_vertical || {},
+        subjects_by_vertical: data.subjects_by_vertical || {},
+        content_subcategories: data.content_subcategories || []
+      })
     } catch (err) {
       console.error('Failed to load options:', err)
     }
@@ -183,19 +188,29 @@ function App() {
       loadOptions()
       loadItems()
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to save item')
+      const errorMsg = err.response?.data?.error || 'Failed to save item'
+      if (err.response?.status === 403) {
+        alert('❌ Not authorized: You can only edit items you created')
+      } else {
+        alert(errorMsg)
+      }
     }
   }
 
   const handleDeleteItem = async (itemId) => {
-    if (!confirm('Delete this item?')) return
+    if (!confirm('Delete this item? This action cannot be undone.')) return
     
     try {
       await axios.delete(`${API_BASE}/item/${itemId}`)
       loadItems()
       loadOptions()
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to delete item')
+      const errorMsg = err.response?.data?.error || 'Failed to delete item'
+      if (err.response?.status === 403) {
+        alert('❌ Not authorized: You can only delete items you created')
+      } else {
+        alert(errorMsg)
+      }
     }
   }
 
@@ -409,20 +424,6 @@ function App() {
             <div key={item.id} className="bg-white rounded-lg shadow hover:shadow-md transition p-4">
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-semibold text-gray-800 text-lg">{item.title || 'Untitled'}</h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEditItem(item)}
-                    className="text-blue-600 hover:text-blue-700 text-sm"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteItem(item.id)}
-                    className="text-red-600 hover:text-red-700 text-sm"
-                  >
-                    Delete
-                  </button>
-                </div>
               </div>
               
               <div className="space-y-1 text-sm mb-3">
