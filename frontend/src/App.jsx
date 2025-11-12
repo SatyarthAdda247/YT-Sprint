@@ -31,7 +31,7 @@ function App() {
   
   // Form
   const [itemForm, setItemForm] = useState({
-    email: '', verificationLink: '', contentType: '', vertical: '', 
+    verificationLink: '', contentType: '', vertical: '', 
     exam: '', subject: '', status: '', contentSubcategory: '', videoFile: null, files: []
   })
   const [linkVerified, setLinkVerified] = useState(false)
@@ -163,7 +163,7 @@ function App() {
     }
     
     const formData = new FormData()
-    formData.append('email', itemForm.email)
+    formData.append('email', userEmail)
     formData.append('verificationLink', itemForm.verificationLink)
     formData.append('contentType', itemForm.contentType)
     formData.append('vertical', itemForm.vertical)
@@ -194,7 +194,7 @@ function App() {
       
       setShowAddModal(false)
       setEditingItem(null)
-      setItemForm({ email: '', verificationLink: '', contentType: '', vertical: '', exam: '', subject: '', status: '', contentSubcategory: '', videoFile: null, files: [] })
+      setItemForm({ verificationLink: '', contentType: '', vertical: '', exam: '', subject: '', status: '', contentSubcategory: '', videoFile: null, files: [] })
       setLinkVerified(false)
       
       loadOptions()
@@ -229,7 +229,6 @@ function App() {
   const handleEditItem = (item) => {
     setEditingItem(item)
     setItemForm({
-      email: item.email || '',
       verificationLink: item.verificationLink || '',
       contentType: item.contentType || '',
       vertical: item.vertical,
@@ -418,26 +417,9 @@ function App() {
         <div className="flex flex-wrap gap-3 mb-6">
           <button
             onClick={() => { setEditingItem(null); setShowAddModal(true) }}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition"
+            className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition"
           >
             Add Item
-          </button>
-          
-          <label className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition cursor-pointer">
-            Bulk Upload CSV
-            <input
-              type="file"
-              accept=".csv"
-              onChange={handleBulkUpload}
-              className="hidden"
-            />
-          </label>
-          
-          <button
-            onClick={handleExport}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
-          >
-            Export CSV
           </button>
         </div>
 
@@ -565,19 +547,6 @@ function App() {
               </div>
               
               <form onSubmit={handleAddItem} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                  <input
-                    type="email"
-                    value={itemForm.email}
-                    onChange={(e) => setItemForm({ ...itemForm, email: e.target.value })}
-                    placeholder="yourname@adda247.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    required
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Only adda247.com, addaeducation.com, studyiq.com emails are allowed</p>
-                </div>
-                
                 <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                   <label className="block text-sm font-medium text-gray-700 mb-2">🔍 Verification Link *</label>
                   <div className="flex gap-2">
