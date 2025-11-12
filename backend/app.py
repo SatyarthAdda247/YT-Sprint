@@ -19,7 +19,7 @@ CORS(app, resources={
     r"/api/*": {
         "origins": "*",
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "X-User-Name"],
+        "allow_headers": ["Content-Type", "X-User-Email"],
         "expose_headers": ["Content-Type"],
         "supports_credentials": False,
         "max_age": 3600
@@ -55,11 +55,16 @@ def verify_password(password, hashed):
 def require_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        user_name = request.headers.get('X-User-Name')
-        if not user_name:
-            return jsonify({'error': 'User name required'}), 401
+        user_email = request.headers.get('X-User-Email')
+        if not user_email:
+            return jsonify({'error': 'User email required'}), 401
         
-        request.user_name = user_name
+        # Validate email domain
+        allowed_domains = ['adda247.com', 'addaeducation.com', 'studyiq.com']
+        if not any(user_email.endswith(f'@{domain}') for domain in allowed_domains):
+            return jsonify({'error': 'Invalid email domain'}), 401
+        
+        request.user_email = user_email
         return f(*args, **kwargs)
     return decorated
 
@@ -136,47 +141,8 @@ def save_user(name, password_hash):
     return put_s3_object(f"users/{name_key}.json", user_data)
 
 # Routes
-@app.route('/api/signup', methods=['POST'])
-def signup():
-    """User signup with name and password"""
-    data = request.json
-    name = data.get('name', '').strip()
-    password = data.get('password', '')
-    
-    if not name or not password:
-        return jsonify({'error': 'Name and password required'}), 400
-    
-    # Check if user exists
-    existing_user = get_user(name)
-    if existing_user:
-        return jsonify({'error': 'User already exists. Please login instead.'}), 400
-    
-    # Hash password and save user
-    password_hash = hash_password(password)
-    save_user(name, password_hash)
-    
-    return jsonify({'user': {'name': name}})
-
-@app.route('/api/login', methods=['POST'])
-def login():
-    """User login with name and password"""
-    data = request.json
-    name = data.get('name', '').strip()
-    password = data.get('password', '')
-    
-    if not name or not password:
-        return jsonify({'error': 'Name and password required'}), 400
-    
-    # Get user from S3
-    user = get_user(name)
-    if not user:
-        return jsonify({'error': 'Invalid credentials'}), 401
-    
-    # Verify password
-    if not verify_password(password, user['password_hash']):
-        return jsonify({'error': 'Invalid credentials'}), 401
-    
-    return jsonify({'user': {'name': name}})
+# Simplified auth - no signup/login needed
+# Authentication is handled via X-User-Email header in require_auth decorator
 
 @app.route('/api/options', methods=['GET'])
 @require_auth
@@ -225,7 +191,7 @@ def get_metadata():
             continue
         if subcategory and item.get('subcategory') != subcategory:
             continue
-        if user_only and item.get('created_by') != request.user_name:
+        if user_only and item.get('created_by') != request.user_email:
             continue
         filtered.append(item)
     
@@ -308,13 +274,13 @@ def create_item():
         'contentSubcategory': content_subcategory,
         'files': [],
         'videoFile': None,
-        'created_by': request.user_name,
+        'created_by': request.user_email,
         'created_at': datetime.now().isoformat()
     }
     
     # Handle video file upload (for Re-edit status)
     if video_file and video_file.filename:
-        video_key = upload_file_to_s3(video_file, item_id, request.user_name)
+        video_key = upload_file_to_s3(video_file, item_id, request.user_email)
         if video_key:
             item['videoFile'] = video_key
     
@@ -322,7 +288,7 @@ def create_item():
     files = request.files.getlist('files')
     for file in files:
         if file.filename:
-            key = upload_file_to_s3(file, item_id, request.user_name)
+            key = upload_file_to_s3(file, item_id, request.user_email)
             if key:
                 item['files'].append(key)
     
@@ -346,7 +312,7 @@ def update_item(item_id):
         return jsonify({'error': 'Item not found'}), 404
     
     # Check ownership
-    if item.get('created_by') != request.user_name:
+    if item.get('created_by') != request.user_email:
         return jsonify({'error': 'Not authorized'}), 403
     
     # Update fields
@@ -369,7 +335,7 @@ def update_item(item_id):
     files = request.files.getlist('files')
     for file in files:
         if file.filename:
-            key = upload_file_to_s3(file, item_id, request.user_name)
+            key = upload_file_to_s3(file, item_id, request.user_email)
             if key:
                 item['files'].append(key)
     
@@ -398,7 +364,7 @@ def delete_item(item_id):
         return jsonify({'error': 'Item not found'}), 404
     
     # Check ownership
-    if item.get('created_by') != request.user_name:
+    if item.get('created_by') != request.user_email:
         return jsonify({'error': 'Not authorized'}), 403
     
     # Delete files from S3
@@ -468,7 +434,7 @@ def bulk_upload():
             'links': [l.strip() for l in row.get('links', '').split('|') if l.strip()],
             'tags': [t.strip() for t in row.get('tags', '').split(',') if t.strip()],
             'files': [],
-            'created_by': request.user_name,
+            'created_by': request.user_email,
             'created_at': datetime.now().isoformat()
         }
         

@@ -5,12 +5,11 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState(null)
+  const [userEmail, setUserEmail] = useState('')
   const [showAuth, setShowAuth] = useState(true)
-  const [authMode, setAuthMode] = useState('login')
   
   // Auth form
-  const [authForm, setAuthForm] = useState({ name: '', password: '' })
+  const [emailInput, setEmailInput] = useState('')
   
   // Options
   const [options, setOptions] = useState({ verticals: [], categories_by_vertical: {}, subjects_by_vertical: {}, content_subcategories: [] })
@@ -36,10 +35,10 @@ function App() {
   const [linkVerified, setLinkVerified] = useState(false)
 
   useEffect(() => {
-    const userName = localStorage.getItem('userName')
-    if (userName) {
-      axios.defaults.headers.common['X-User-Name'] = userName
-      setUser({ name: userName })
+    const savedEmail = localStorage.getItem('userEmail')
+    if (savedEmail) {
+      axios.defaults.headers.common['X-User-Email'] = savedEmail
+      setUserEmail(savedEmail)
       setIsLoggedIn(true)
       setShowAuth(false)
       loadOptions()
@@ -53,32 +52,35 @@ function App() {
     }
   }, [vertical, category, subcategory, userOnly, isLoggedIn])
 
-  const handleAuth = async (e) => {
+  const handleAuth = (e) => {
     e.preventDefault()
-    try {
-      const endpoint = authMode === 'login' ? '/login' : '/signup'
-      const { data } = await axios.post(`${API_BASE}${endpoint}`, authForm)
-      
-      localStorage.setItem('userName', data.user.name)
-      axios.defaults.headers.common['X-User-Name'] = data.user.name
-      
-      setUser(data.user)
-      setIsLoggedIn(true)
-      setShowAuth(false)
-      
-      loadOptions()
-      loadItems()
-    } catch (err) {
-      alert(err.response?.data?.error || 'Authentication failed')
+    
+    // Validate email domain
+    const allowedDomains = ['adda247.com', 'addaeducation.com', 'studyiq.com']
+    const isValidDomain = allowedDomains.some(domain => emailInput.endsWith(`@${domain}`))
+    
+    if (!isValidDomain) {
+      alert('Only adda247.com, addaeducation.com, studyiq.com emails are allowed')
+      return
     }
+    
+    localStorage.setItem('userEmail', emailInput)
+    axios.defaults.headers.common['X-User-Email'] = emailInput
+    
+    setUserEmail(emailInput)
+    setIsLoggedIn(true)
+    setShowAuth(false)
+    
+    loadOptions()
+    loadItems()
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('userName')
-    delete axios.defaults.headers.common['X-User-Name']
+    localStorage.removeItem('userEmail')
+    delete axios.defaults.headers.common['X-User-Email']
     setIsLoggedIn(false)
     setShowAuth(true)
-    setUser(null)
+    setUserEmail('')
     setItems([])
   }
 
@@ -266,55 +268,33 @@ function App() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Content Dashboard</h1>
-          
-          <div className="flex gap-2 mb-6">
-            <button
-              onClick={() => setAuthMode('login')}
-              className={`flex-1 py-2 rounded-lg font-medium ${authMode === 'login' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}`}
-            >
-              Login
-            </button>
-            <button
-              onClick={() => setAuthMode('signup')}
-              className={`flex-1 py-2 rounded-lg font-medium ${authMode === 'signup' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}`}
-            >
-              Sign Up
-            </button>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">YT Sprint Dashboard</h1>
+          <p className="text-gray-600 mb-6 text-center">Enter your email to continue</p>
           
           <form onSubmit={handleAuth} className="space-y-4">
             <input
-              type="text"
-              placeholder="Your Name"
-              value={authForm.name}
-              onChange={(e) => setAuthForm({ ...authForm, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              type="email"
+              placeholder="yourname@adda247.com"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               required
             />
             
-            <input
-              type="password"
-              placeholder="Password"
-              value={authForm.password}
-              onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-              minLength={6}
-            />
+            <p className="text-xs text-gray-500 text-center">
+              Only @adda247.com, @addaeducation.com, @studyiq.com emails
+            </p>
             
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition"
+              className="w-full bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition"
             >
-              {authMode === 'login' ? 'Login' : 'Sign Up'}
+              Continue
             </button>
             
-            {authMode === 'login' && (
-              <p className="text-xs text-gray-500 text-center">
-                First time? Your account will be loaded with your previous uploads.
-              </p>
-            )}
+            <p className="text-xs text-gray-500 text-center">
+              Your previous uploads will be shown automatically
+            </p>
           </form>
         </div>
       </div>
@@ -326,9 +306,9 @@ function App() {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">Content Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-800">YT Sprint Dashboard</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
+            <span className="text-sm text-gray-600">{userEmail}</span>
             <button
               onClick={handleLogout}
               className="text-sm text-red-600 hover:text-red-700 font-medium"
