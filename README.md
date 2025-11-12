@@ -4,11 +4,14 @@ A full-stack web application for managing YouTube Shorts content with hierarchic
 
 ## 🚀 Quick Start
 
-**Backend NOT deployed yet?** → See [DEPLOY_NOW.md](DEPLOY_NOW.md)
+### ⚡ Fastest Setup (2 Clicks)
+**[SETUP_IN_2_CLICKS.md](SETUP_IN_2_CLICKS.md)** - Deploy with no CLI, just click buttons!
 
-**Already deployed?** → Check [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)
-
-**Production issues?** → See [VERCEL_FIX.md](VERCEL_FIX.md)
+### 📘 Detailed Guides
+- **Backend NOT deployed?** → [DEPLOY_NOW.md](DEPLOY_NOW.md)
+- **Already deployed?** → [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)
+- **Production issues?** → [VERCEL_FIX.md](VERCEL_FIX.md)
+- **Complete walkthrough** → [START_HERE.md](START_HERE.md)
 
 ## Features
 

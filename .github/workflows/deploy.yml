@@ -1,0 +1,20 @@
+name: Auto Deploy Backend
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy Info
+        run: |
+          echo "✅ Backend changes detected"
+          echo "Render will auto-deploy if connected"
+
