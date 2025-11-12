@@ -15,7 +15,16 @@ from master_data import get_all_verticals, get_exams_by_vertical, get_subjects_b
 load_dotenv('../.env.local')
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "X-User-Name"],
+        "expose_headers": ["Content-Type"],
+        "supports_credentials": False,
+        "max_age": 3600
+    }
+})
 
 # Config
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')

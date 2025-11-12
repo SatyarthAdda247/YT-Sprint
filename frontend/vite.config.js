@@ -11,6 +11,33 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  build: {
+    // Optimize for production
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console.logs in production
+        drop_debugger: true
+      }
+    },
+    // Code splitting
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'axios-vendor': ['axios']
+        }
+      }
+    },
+    // Asset optimization
+    chunkSizeWarningLimit: 1000,
+    reportCompressedSize: false, // Faster builds
+    sourcemap: false // Smaller builds
+  },
+  // Performance optimizations
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'axios']
   }
 })
 
