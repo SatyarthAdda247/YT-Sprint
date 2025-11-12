@@ -1,0 +1,381 @@
+{
+  "info": {
+    "name": "Content Dashboard API",
+    "description": "API collection for Content Dashboard application",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "user_name",
+      "value": "John Doe",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/signup",
+              "host": ["{{base_url}}"],
+              "path": ["signup"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"user_name\", jsonData.user.name);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Options & Metadata",
+      "item": [
+        {
+          "name": "Get Options",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Name",
+                "value": "{{user_name}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/options",
+              "host": ["{{base_url}}"],
+              "path": ["options"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Name",
+                "value": "{{user_name}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/metadata",
+              "host": ["{{base_url}}"],
+              "path": ["metadata"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Filtered Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Name",
+                "value": "{{user_name}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/metadata?vertical=Bank&category=IBPS PO&user_only=false",
+              "host": ["{{base_url}}"],
+              "path": ["metadata"],
+              "query": [
+                {
+                  "key": "vertical",
+                  "value": "Bank"
+                },
+                {
+                  "key": "category",
+                  "value": "IBPS PO"
+                },
+                {
+                  "key": "user_only",
+                  "value": "false"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Item Management",
+      "item": [
+        {
+          "name": "Create Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Name",
+                "value": "{{user_name}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Test Item",
+                  "type": "text"
+                },
+                {
+                  "key": "vertical",
+                  "value": "Bank",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "IBPS PO",
+                  "type": "text"
+                },
+                {
+                  "key": "subcategory",
+                  "value": "Exam Pattern",
+                  "type": "text"
+                },
+                {
+                  "key": "notes",
+                  "value": "Test notes for this item",
+                  "type": "text"
+                },
+                {
+                  "key": "links",
+                  "value": "https://example.com, https://another.com",
+                  "type": "text"
+                },
+                {
+                  "key": "tags",
+                  "value": "test, demo, important",
+                  "type": "text"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/item",
+              "host": ["{{base_url}}"],
+              "path": ["item"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Name",
+                "value": "{{user_name}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Updated Title",
+                  "type": "text"
+                },
+                {
+                  "key": "notes",
+                  "value": "Updated notes",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/item/:item_id",
+              "host": ["{{base_url}}"],
+              "path": ["item", ":item_id"],
+              "variable": [
+                {
+                  "key": "item_id",
+                  "value": "uuid-here"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Name",
+                "value": "{{user_name}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/item/:item_id",
+              "host": ["{{base_url}}"],
+              "path": ["item", ":item_id"],
+              "variable": [
+                {
+                  "key": "item_id",
+                  "value": "uuid-here"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get File Download URL",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Name",
+                "value": "{{user_name}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/item/:item_id/download/:file_key",
+              "host": ["{{base_url}}"],
+              "path": ["item", ":item_id", "download", ":file_key"],
+              "variable": [
+                {
+                  "key": "item_id",
+                  "value": "uuid-here"
+                },
+                {
+                  "key": "file_key",
+                  "value": "files/user@example.com/uuid/filename.pdf"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bulk Operations",
+      "item": [
+        {
+          "name": "Bulk Upload CSV",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Name",
+                "value": "{{user_name}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/bulk-upload",
+              "host": ["{{base_url}}"],
+              "path": ["bulk-upload"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export CSV",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Name",
+                "value": "{{user_name}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/export?vertical=Bank",
+              "host": ["{{base_url}}"],
+              "path": ["export"],
+              "query": [
+                {
+                  "key": "vertical",
+                  "value": "Bank"
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "subcategory",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
+
