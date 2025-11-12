@@ -219,37 +219,70 @@ def get_metadata():
     
     return jsonify({'items': filtered})
 
+def extract_youtube_id(url):
+    """Extract YouTube video ID from URL using regex"""
+    import re
+    # Matches youtube.com/watch?v=, youtube.com/shorts/, youtu.be/
+    pattern = r'(?:youtube\.com\/(?:shorts\/|watch\?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})'
+    match = re.search(pattern, url)
+    return match.group(1) if match else None
+
+@app.route('/api/check-duplicate/<video_id>', methods=['GET'])
+@require_auth
+def check_duplicate(video_id):
+    """Check if YouTube video ID already exists"""
+    index = get_index()
+    items = index.get('items', [])
+    
+    for item in items:
+        item_video_id = item.get('youtube_id')
+        if item_video_id == video_id:
+            return jsonify({'exists': True, 'item': item})
+    
+    return jsonify({'exists': False})
+
 @app.route('/api/item', methods=['POST'])
 @require_auth
 def create_item():
     """Create new item"""
     # Get form data
-    title = request.form.get('title', '').strip()
+    email = request.form.get('email', '').strip()
+    verification_link = request.form.get('verificationLink', '').strip()
+    content_type = request.form.get('contentType', '').strip()
     vertical = request.form.get('vertical', '').strip()
-    category = request.form.get('category', '').strip()
-    subcategory = request.form.get('subcategory', '').strip()
-    notes = request.form.get('notes', '').strip()
-    links_str = request.form.get('links', '')
-    tags_str = request.form.get('tags', '')
+    exam = request.form.get('exam', '').strip()
+    status = request.form.get('status', '').strip()
     
-    if not title or not vertical:
-        return jsonify({'error': 'Title and vertical required'}), 400
+    # Validate email domain
+    allowed_domains = ['adda247.com', 'addaeducation.com', 'studyiq.com']
+    if not any(email.endswith(f'@{domain}') for domain in allowed_domains):
+        return jsonify({'error': 'Only adda247.com, addaeducation.com, studyiq.com emails are allowed'}), 400
     
-    # Parse links and tags
-    links = [l.strip() for l in links_str.split(',') if l.strip()]
-    tags = [t.strip() for t in tags_str.split(',') if t.strip()]
+    if not verification_link or not vertical or not content_type or not exam or not status:
+        return jsonify({'error': 'All fields are required'}), 400
+    
+    # Extract YouTube ID
+    youtube_id = extract_youtube_id(verification_link)
+    if not youtube_id:
+        return jsonify({'error': 'Invalid YouTube URL'}), 400
+    
+    # Check for duplicate
+    index = get_index()
+    for item in index.get('items', []):
+        if item.get('youtube_id') == youtube_id:
+            return jsonify({'error': f'This video already exists! Uploaded by: {item.get("created_by")}'}), 409
     
     # Create item
     item_id = str(uuid.uuid4())
     item = {
         'id': item_id,
-        'title': title,
+        'email': email,
+        'verificationLink': verification_link,
+        'youtube_id': youtube_id,
+        'contentType': content_type,
         'vertical': vertical,
-        'category': category,
-        'subcategory': subcategory,
-        'notes': notes,
-        'links': links,
-        'tags': tags,
+        'exam': exam,
+        'status': status,
         'files': [],
         'created_by': request.user_name,
         'created_at': datetime.now().isoformat()
@@ -267,7 +300,6 @@ def create_item():
     put_s3_object(f"metadata/items/{item_id}.json", item)
     
     # Update index
-    index = get_index()
     index['items'].append(item)
     update_index(index)
     

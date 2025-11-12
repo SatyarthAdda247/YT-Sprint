@@ -30,9 +30,10 @@ function App() {
   
   // Form
   const [itemForm, setItemForm] = useState({
-    title: '', vertical: '', category: '', subcategory: '',
-    notes: '', links: '', tags: '', files: []
+    email: '', verificationLink: '', contentType: '', vertical: '', 
+    exam: '', status: '', files: []
   })
+  const [linkVerified, setLinkVerified] = useState(false)
 
   useEffect(() => {
     const userName = localStorage.getItem('userName')
@@ -100,17 +101,46 @@ function App() {
     }
   }
 
+  const handleCheckLink = async () => {
+    const youtubeRegex = /(?:youtube\.com\/(?:shorts\/|watch\?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+    const match = itemForm.verificationLink.match(youtubeRegex)
+    
+    if (!match) {
+      alert('Invalid YouTube link. Please enter a valid YouTube video or shorts URL.')
+      return
+    }
+    
+    const videoId = match[1]
+    
+    // Check for duplicate
+    try {
+      const { data } = await axios.get(`${API_BASE}/check-duplicate/${videoId}`)
+      if (data.exists) {
+        alert(`This video already exists! Uploaded by: ${data.item.created_by}`)
+        return
+      }
+      setLinkVerified(true)
+      alert('Link verified! No duplicates found.')
+    } catch (err) {
+      alert('Failed to verify link')
+    }
+  }
+
   const handleAddItem = async (e) => {
     e.preventDefault()
     
+    if (!linkVerified) {
+      alert('Please verify the link first by clicking "Check Link"')
+      return
+    }
+    
     const formData = new FormData()
-    formData.append('title', itemForm.title)
+    formData.append('email', itemForm.email)
+    formData.append('verificationLink', itemForm.verificationLink)
+    formData.append('contentType', itemForm.contentType)
     formData.append('vertical', itemForm.vertical)
-    formData.append('category', itemForm.category)
-    formData.append('subcategory', itemForm.subcategory)
-    formData.append('notes', itemForm.notes)
-    formData.append('links', itemForm.links)
-    formData.append('tags', itemForm.tags)
+    formData.append('exam', itemForm.exam)
+    formData.append('status', itemForm.status)
     
     Array.from(itemForm.files).forEach(file => {
       formData.append('files', file)
@@ -129,7 +159,8 @@ function App() {
       
       setShowAddModal(false)
       setEditingItem(null)
-      setItemForm({ title: '', vertical: '', category: '', subcategory: '', notes: '', links: '', tags: '', files: [] })
+      setItemForm({ email: '', verificationLink: '', contentType: '', vertical: '', exam: '', status: '', files: [] })
+      setLinkVerified(false)
       
       loadOptions()
       loadItems()
@@ -153,15 +184,15 @@ function App() {
   const handleEditItem = (item) => {
     setEditingItem(item)
     setItemForm({
-      title: item.title,
+      email: item.email || '',
+      verificationLink: item.verificationLink || '',
+      contentType: item.contentType || '',
       vertical: item.vertical,
-      category: item.category,
-      subcategory: item.subcategory,
-      notes: item.notes || '',
-      links: item.links?.join(', ') || '',
-      tags: item.tags?.join(', ') || '',
+      exam: item.exam || '',
+      status: item.status || '',
       files: []
     })
+    setLinkVerified(true)
     setShowAddModal(true)
   }
 
@@ -397,29 +428,36 @@ function App() {
               
               <div className="space-y-1 text-sm mb-3">
                 <p className="text-gray-600"><span className="font-medium">Vertical:</span> {item.vertical}</p>
-                {item.category && <p className="text-gray-600"><span className="font-medium">Exam:</span> {item.category}</p>}
-                {item.subcategory && <p className="text-gray-600"><span className="font-medium">Subject:</span> {item.subcategory}</p>}
+                {item.exam && <p className="text-gray-600"><span className="font-medium">Exam:</span> {item.exam}</p>}
+                {item.contentType && <p className="text-gray-600"><span className="font-medium">Type:</span> {item.contentType}</p>}
+                {item.status && (
+                  <span className={`inline-block px-2 py-1 text-xs rounded ${
+                    item.status === 'Published' ? 'bg-green-100 text-green-800' :
+                    item.status === 'Final' ? 'bg-blue-100 text-blue-800' :
+                    item.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {item.status}
+                  </span>
+                )}
               </div>
               
-              {item.notes && (
-                <p className="text-sm text-gray-700 mb-3 line-clamp-2">{item.notes}</p>
+              {item.verificationLink && (
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-gray-500 mb-1">Video Link:</p>
+                  <a
+                    href={item.verificationLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-red-600 hover:text-red-700 block truncate"
+                  >
+                    {item.verificationLink}
+                  </a>
+                </div>
               )}
               
-              {item.links && item.links.length > 0 && (
-                <div className="mb-3">
-                  <p className="text-xs font-medium text-gray-500 mb-1">Links:</p>
-                  {item.links.map((link, i) => (
-                    <a
-                      key={i}
-                      href={link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-indigo-600 hover:text-indigo-700 block truncate"
-                    >
-                      {link}
-                    </a>
-                  ))}
-                </div>
+              {item.email && (
+                <p className="text-xs text-gray-500">Email: {item.email}</p>
               )}
               
               {item.files && item.files.length > 0 && (
@@ -485,116 +523,122 @@ function App() {
               
               <form onSubmit={handleAddItem} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
                   <input
-                    type="text"
-                    value={itemForm.title}
-                    onChange={(e) => setItemForm({ ...itemForm, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    type="email"
+                    value={itemForm.email}
+                    onChange={(e) => setItemForm({ ...itemForm, email: e.target.value })}
+                    placeholder="yourname@adda247.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     required
                   />
+                  <p className="text-xs text-gray-500 mt-1">Only adda247.com, addaeducation.com, studyiq.com emails are allowed</p>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Vertical *</label>
+                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">🔍 Verification Link *</label>
+                  <div className="flex gap-2">
                     <input
-                      type="text"
-                      value={itemForm.vertical}
-                      onChange={(e) => setItemForm({ ...itemForm, vertical: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      list="verticals-list"
+                      type="url"
+                      value={itemForm.verificationLink}
+                      onChange={(e) => { 
+                        setItemForm({ ...itemForm, verificationLink: e.target.value })
+                        setLinkVerified(false)
+                      }}
+                      placeholder="https://youtube.com/shorts/..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       required
                     />
-                    <datalist id="verticals-list">
-                      {options.verticals.map(v => <option key={v} value={v} />)}
-                    </datalist>
+                    <button
+                      type="button"
+                      onClick={handleCheckLink}
+                      className="px-4 py-2 bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-800 transition"
+                    >
+                      Check Link
+                    </button>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Exam</label>
-                    <input
-                      type="text"
-                      value={itemForm.category}
-                      onChange={(e) => setItemForm({ ...itemForm, category: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      list="exams-list"
-                    />
-                    <datalist id="exams-list">
-                      {itemForm.vertical && options.categories_by_vertical?.[itemForm.vertical]?.map(c => <option key={c} value={c} />)}
-                    </datalist>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-                    <input
-                      type="text"
-                      value={itemForm.subcategory}
-                      onChange={(e) => setItemForm({ ...itemForm, subcategory: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      list="subjects-list"
-                    />
-                    <datalist id="subjects-list">
-                      {itemForm.vertical && options.subcategories_by_vertical?.[itemForm.vertical]?.map(s => <option key={s} value={s} />)}
-                    </datalist>
-                  </div>
+                  {linkVerified && (
+                    <p className="text-xs text-green-600 mt-1">✓ Link verified - no duplicates found</p>
+                  )}
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                  <textarea
-                    value={itemForm.notes}
-                    onChange={(e) => setItemForm({ ...itemForm, notes: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Type of Content *</label>
+                  <select
+                    value={itemForm.contentType}
+                    onChange={(e) => setItemForm({ ...itemForm, contentType: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select Content Type</option>
+                    <option value="Exam_Information">Exam Information</option>
+                    <option value="Content">Content</option>
+                    <option value="Motivational_or_Fun">Motivational or Fun</option>
+                  </select>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Links (comma-separated)</label>
-                  <input
-                    type="text"
-                    value={itemForm.links}
-                    onChange={(e) => setItemForm({ ...itemForm, links: e.target.value })}
-                    placeholder="https://example.com, https://another.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Vertical Name *</label>
+                  <select
+                    value={itemForm.vertical}
+                    onChange={(e) => setItemForm({ ...itemForm, vertical: e.target.value, exam: '' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select Vertical</option>
+                    {options.verticals.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tags (comma-separated)</label>
-                  <input
-                    type="text"
-                    value={itemForm.tags}
-                    onChange={(e) => setItemForm({ ...itemForm, tags: e.target.value })}
-                    placeholder="tag1, tag2, tag3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Exam Name *</label>
+                  <select
+                    value={itemForm.exam}
+                    onChange={(e) => setItemForm({ ...itemForm, exam: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    disabled={!itemForm.vertical}
+                    required
+                  >
+                    <option value="">Select Exam</option>
+                    {itemForm.vertical && options.categories_by_vertical?.[itemForm.vertical]?.map(e => (
+                      <option key={e} value={e}>{e}</option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Files</label>
-                  <input
-                    type="file"
-                    multiple
-                    onChange={(e) => setItemForm({ ...itemForm, files: e.target.files })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+                  <select
+                    value={itemForm.status}
+                    onChange={(e) => setItemForm({ ...itemForm, status: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select Status</option>
+                    <option value="Draft">Draft</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Final">Final</option>
+                    <option value="Published">Published</option>
+                  </select>
                 </div>
                 
                 <div className="flex gap-3 pt-4">
                   <button
-                    type="submit"
-                    className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition"
-                  >
-                    {editingItem ? 'Update' : 'Create'}
-                  </button>
-                  <button
                     type="button"
-                    onClick={() => { setShowAddModal(false); setEditingItem(null) }}
+                    onClick={() => { 
+                      setShowAddModal(false)
+                      setEditingItem(null)
+                      setLinkVerified(false)
+                    }}
                     className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-300 transition"
                   >
                     Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition"
+                  >
+                    Add Entry
                   </button>
                 </div>
               </form>
