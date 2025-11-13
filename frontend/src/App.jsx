@@ -714,10 +714,24 @@ function App() {
                 </div>
                 
                 {itemForm.status === 'Re-edit' && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-sm text-yellow-800 mb-2">
-                      ℹ️ For Re-edit status, provide the YouTube link of the video that needs re-editing.
-                      File upload feature coming soon.
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm font-medium text-blue-900 mb-2">
+                      📹 Upload Video for Re-editing
+                    </p>
+                    <p className="text-sm text-blue-700 mb-3">
+                      Upload your video file (max 20MB) to Google Drive, then paste the YouTube link below.
+                    </p>
+                    <a
+                      href="https://drive.google.com/drive/folders/1mIFaECu0YQ80tGDRiguYA7A4J4Hlefgy?usp=drive_link"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                    >
+                      <span>📤</span>
+                      Upload Video to Drive
+                    </a>
+                    <p className="text-xs text-blue-600 mt-2">
+                      Opens in new tab • Max 20MB for shorts
                     </p>
                   </div>
                 )}
