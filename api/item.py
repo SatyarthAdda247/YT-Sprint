@@ -7,6 +7,7 @@ from datetime import datetime
 import re
 import boto3
 from io import BytesIO
+import cgi
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -15,6 +16,9 @@ AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 AWS_REGION = os.getenv('AWS_REGION', 'ap-south-1')
 S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
+
+# Max file size: 20MB for shorts
+MAX_FILE_SIZE = 20 * 1024 * 1024
 
 # Initialize S3 client
 s3 = boto3.client(
@@ -77,11 +81,24 @@ class handler(BaseHTTPRequestHandler):
     
     def do_POST(self):
         try:
+            # Check content length
+            content_length = int(self.headers.get('Content-Length', 0))
+            
+            # Enforce 20MB limit
+            if content_length > MAX_FILE_SIZE:
+                self.send_response(413)
+                self._send_cors_headers()
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'error': 'File too large. Maximum 20MB allowed for shorts.'
+                }).encode())
+                return
+            
             # Read request body
-            content_length = int(self.headers['Content-Length'])
             body = self.rfile.read(content_length)
             
-            # Parse form data (simplified - only JSON for now)
+            # Parse form data
             try:
                 data = json.loads(body.decode('utf-8'))
             except:

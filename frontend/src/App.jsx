@@ -711,10 +711,18 @@ function App() {
                     <input
                       type="file"
                       accept="video/*,.mp4,.mov,.avi,.mkv"
-                      onChange={(e) => setItemForm({ ...itemForm, videoFile: e.target.files[0] })}
+                      onChange={(e) => {
+                        const file = e.target.files[0]
+                        if (file && file.size > 20 * 1024 * 1024) {
+                          alert('⚠️ File size must be under 20MB for shorts')
+                          e.target.value = ''
+                          return
+                        }
+                        setItemForm({ ...itemForm, videoFile: file })
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Upload any size video - unlimited S3 storage</p>
+                    <p className="text-xs text-gray-500 mt-1">Max 20MB for shorts - Upload to S3</p>
                   </div>
                 )}
                 
