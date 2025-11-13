@@ -1,0 +1,63 @@
+RAILWAY DEPLOYMENT - COPY/PASTE COMMANDS
+=========================================
+
+STEP 1: Login
+─────────────
+railway login
+
+
+STEP 2: Go to Backend
+─────────────────────
+cd /Users/adda247/Downloads/ytsprint/backend
+
+
+STEP 3: Initialize
+──────────────────
+railway init
+# Choose: Create new project
+# Name: yt-sprint-backend
+
+
+STEP 4: Deploy
+──────────────
+railway up
+
+
+STEP 5: Set Environment Variables
+──────────────────────────────────
+# IMPORTANT: Replace with your actual AWS credentials
+
+railway variables set AWS_ACCESS_KEY_ID=YOUR_AWS_KEY_HERE
+railway variables set AWS_SECRET_ACCESS_KEY=YOUR_AWS_SECRET_HERE
+railway variables set AWS_REGION=ap-south-1
+railway variables set S3_BUCKET_NAME=YOUR_BUCKET_NAME_HERE
+
+
+STEP 6: Get URL
+───────────────
+railway domain
+# Copy the URL shown (e.g., https://yt-sprint-backend.up.railway.app)
+
+
+STEP 7: Test Backend
+────────────────────
+# Replace YOUR_URL with the URL from step 6
+curl https://YOUR_URL.railway.app/api/options -H "X-User-Email: test@adda247.com"
+
+
+STEP 8: Update Vercel
+─────────────────────
+Go to: https://vercel.com/dashboard
+
+1. Select: yt-sprint
+2. Settings → Environment Variables → Add New
+3. Name: VITE_API_URL
+4. Value: https://YOUR_URL.railway.app/api  (add /api at the end!)
+5. Environments: Select ALL
+6. Save
+7. Go to Deployments → Redeploy
+
+
+DONE! Your app is live at: https://yt-sprint.vercel.app
+═══════════════════════════════════════════════════════════
+
