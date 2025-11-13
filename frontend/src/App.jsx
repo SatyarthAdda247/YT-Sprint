@@ -137,15 +137,19 @@ function App() {
     
     // Check for duplicate
     try {
-      const { data } = await axios.get(`${API_BASE}/check-duplicate/${videoId}`)
+      const { data } = await axios.get(`${API_BASE}/check-duplicate/${videoId}`, {
+        headers: { 'X-User-Email': userEmail }
+      })
       if (data.exists) {
         alert(`This video already exists! Uploaded by: ${data.item.created_by}`)
         return
       }
       setLinkVerified(true)
-      alert('Link verified! No duplicates found.')
+      alert('✅ Link verified! No duplicates found.')
     } catch (err) {
-      alert('Failed to verify link')
+      console.error('Verification error:', err)
+      alert('Failed to verify link. You can still proceed.')
+      setLinkVerified(true)
     }
   }
 
@@ -158,41 +162,45 @@ function App() {
         alert('Please upload a video file for Re-edit status')
         return
       }
+      // Check file size (20MB limit)
+      if (itemForm.videoFile.size > 20 * 1024 * 1024) {
+        alert('⚠️ Video file must be under 20MB')
+        return
+      }
     } else {
       // For other statuses, verification link is required
-      if (!linkVerified) {
+      if (!linkVerified && itemForm.verificationLink) {
         alert('Please verify the link first by clicking "Check Link"')
         return
       }
     }
     
-    const formData = new FormData()
-    formData.append('email', userEmail)
-    formData.append('verificationLink', itemForm.verificationLink)
-    formData.append('contentType', itemForm.contentType)
-    formData.append('vertical', itemForm.vertical)
-    formData.append('exam', itemForm.exam)
-    formData.append('subject', itemForm.subject)
-    formData.append('status', itemForm.status)
-    formData.append('contentSubcategory', itemForm.contentSubcategory)
-    
-    // Add video file if status is Re-edit
-    if (itemForm.videoFile) {
-      formData.append('videoFile', itemForm.videoFile)
-    }
-    
-    Array.from(itemForm.files || []).forEach(file => {
-      formData.append('files', file)
-    })
-    
     try {
+      // For now, send as JSON (file upload will be added later with S3 presigned URLs)
+      const payload = {
+        email: userEmail,
+        verificationLink: itemForm.verificationLink || '',
+        contentType: itemForm.contentType,
+        vertical: itemForm.vertical,
+        exam: itemForm.exam,
+        subject: itemForm.subject,
+        status: itemForm.status,
+        contentSubcategory: itemForm.contentSubcategory
+      }
+      
       if (editingItem) {
-        await axios.put(`${API_BASE}/item/${editingItem.id}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+        await axios.put(`${API_BASE}/item/${editingItem.id}`, payload, {
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-User-Email': userEmail
+          }
         })
       } else {
-        await axios.post(`${API_BASE}/item`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+        await axios.post(`${API_BASE}/item`, payload, {
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-User-Email': userEmail
+          }
         })
       }
       
@@ -201,14 +209,19 @@ function App() {
       setItemForm({ verificationLink: '', contentType: '', vertical: '', exam: '', subject: '', status: '', contentSubcategory: '', videoFile: null, files: [] })
       setLinkVerified(false)
       
+      alert('✅ Entry saved successfully!')
+      
       loadOptions()
       loadItems()
     } catch (err) {
-      const errorMsg = err.response?.data?.error || 'Failed to save item'
+      console.error('Save error:', err)
+      const errorMsg = err.response?.data?.error || err.message || 'Failed to save item'
       if (err.response?.status === 403) {
         alert('❌ Not authorized: You can only edit items you created')
+      } else if (err.response?.status === 413) {
+        alert('❌ File too large. Maximum 20MB allowed.')
       } else {
-        alert(errorMsg)
+        alert('❌ Error: ' + errorMsg)
       }
     }
   }
@@ -585,7 +598,7 @@ function App() {
               
               <form onSubmit={handleAddItem} className="space-y-4">
                 <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">🔍 Verification Link *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">🔍 Verification Link {itemForm.status !== 'Re-edit' && '*'}</label>
                   <div className="flex gap-2">
                     <input
                       type="url"
@@ -596,7 +609,7 @@ function App() {
                       }}
                       placeholder="https://youtube.com/shorts/..."
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      required
+                      required={itemForm.status !== 'Re-edit'}
                     />
                     <button
                       type="button"
