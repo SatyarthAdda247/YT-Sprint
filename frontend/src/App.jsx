@@ -27,6 +27,7 @@ function App() {
   // Items
   const [items, setItems] = useState([])
   const [itemsLoading, setItemsLoading] = useState(false)
+  const [s3ConfigWarning, setS3ConfigWarning] = useState(false)
   
   // Modals
   const [showAddModal, setShowAddModal] = useState(false)
@@ -115,9 +116,22 @@ function App() {
       setItemsLoading(true)
       const params = { vertical, category, subcategory, user_only: userOnly }
       const { data } = await axios.get(`${API_BASE}/metadata`, { params })
+      console.log('Loaded items:', data.items?.length || 0, 'items')
       setItems(data.items || [])
+      
+      // Check if S3 is configured by seeing if we got any items or if the error mentions S3
+      if (data.items && data.items.length === 0 && !s3ConfigWarning) {
+        // Check if S3 is actually configured by trying to get options
+        const testResponse = await axios.get(`${API_BASE}/metadata`)
+        if (testResponse.data.error && testResponse.data.error.includes('S3')) {
+          setS3ConfigWarning(true)
+        }
+      }
     } catch (err) {
       console.error('Failed to load items:', err)
+      if (err.response?.data?.error?.includes('S3')) {
+        setS3ConfigWarning(true)
+      }
       setItems([])
     } finally {
       setItemsLoading(false)
@@ -199,8 +213,11 @@ function App() {
       
       alert('✅ Entry saved successfully!')
       
+      // Reload items after a short delay to ensure S3 has updated
+      setTimeout(() => {
+        loadItems()
+      }, 500)
       loadOptions()
-      loadItems()
     } catch (err) {
       console.error('Save error:', err)
       let errorMsg = 'Failed to save item'
@@ -486,6 +503,29 @@ function App() {
             Clear All Filters
           </button>
         </div>
+
+        {/* S3 Configuration Warning */}
+        {s3ConfigWarning && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-2xl mr-3">⚠️</span>
+              <div>
+                <h3 className="text-yellow-800 font-semibold mb-1">AWS S3 Not Configured</h3>
+                <p className="text-yellow-700 text-sm mb-2">
+                  Items are being created but not stored. Please configure AWS S3 credentials in Vercel:
+                </p>
+                <ol className="text-yellow-700 text-sm list-decimal ml-4 space-y-1">
+                  <li>Go to Vercel Dashboard → Your Project → Settings → Environment Variables</li>
+                  <li>Add: <code className="bg-yellow-100 px-1 rounded">AWS_ACCESS_KEY_ID</code></li>
+                  <li>Add: <code className="bg-yellow-100 px-1 rounded">AWS_SECRET_ACCESS_KEY</code></li>
+                  <li>Add: <code className="bg-yellow-100 px-1 rounded">AWS_REGION</code> (e.g., ap-south-1)</li>
+                  <li>Add: <code className="bg-yellow-100 px-1 rounded">S3_BUCKET_NAME</code></li>
+                  <li>Redeploy your application</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Content Entries Table */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
