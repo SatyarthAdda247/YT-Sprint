@@ -734,8 +734,22 @@ function App() {
                     <p className="text-sm font-medium text-blue-900 mb-2">
                       📹 For Re-editing: Upload video to your Drive
                     </p>
-                    <p className="text-xs text-blue-600 mb-3">
-                      Upload your video (max 20MB) to your own Google Drive folder, then paste the Drive link below
+                    <p className="text-sm text-blue-700 mb-3">
+                      Upload your video (max 20MB) to your Google Drive folder, then add the Drive link below.
+                    </p>
+                    {itemForm.driveLink && (
+                      <a
+                        href={itemForm.driveLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition"
+                      >
+                        <span>📂</span>
+                        Open Your Drive Folder
+                      </a>
+                    )}
+                    <p className="text-xs text-blue-600 mt-2">
+                      {itemForm.driveLink ? 'Your custom Drive link • Max 20MB' : 'Add your Drive link below for quick access'}
                     </p>
                   </div>
                 )}
