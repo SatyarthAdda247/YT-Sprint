@@ -15,6 +15,14 @@
       "destination": "/api/metadata.py"
     },
     {
+      "source": "/api/item",
+      "destination": "/api/item.py"
+    },
+    {
+      "source": "/api/check-duplicate/(.*)",
+      "destination": "/api/check-duplicate.py"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
