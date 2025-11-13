@@ -1,6 +1,10 @@
 backend/
+tests/
 *.pyc
 __pycache__/
-*.log
-.DS_Store
-
+*.xlsx
+*.csv
+parse*.py
+sample-output/
+*.md
+!README.md
