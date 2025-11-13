@@ -1,10 +1,13 @@
-backend/
+# Only ignore these specific files
 tests/
 *.pyc
 __pycache__/
 *.xlsx
-*.csv
 parse*.py
 sample-output/
+node_modules/
+.git/
 *.md
 !README.md
+!SINGLE_DEPLOY.md
+
