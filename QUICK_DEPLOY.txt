@@ -1,0 +1,25 @@
+FASTEST DEPLOYMENT - NO CLI NEEDED
+===================================
+
+Backend Deployed? Use this URL in Vercel:
+
+1. Copy your backend URL from Render
+2. Go to: https://vercel.com/dashboard
+3. Select: yt-sprint
+4. Settings → Environment Variables
+5. Add:
+   Name: VITE_API_URL
+   Value: https://YOUR-BACKEND-URL.onrender.com/api
+6. Save
+7. Deployments → Redeploy
+
+DONE! App live at: https://yt-sprint.vercel.app
+
+AWS CREDENTIALS NEEDED:
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+- AWS_REGION: ap-south-1
+- S3_BUCKET_NAME
+
+TIME: 5 minutes total
+

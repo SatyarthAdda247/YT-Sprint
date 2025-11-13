@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+// API routes now on same domain - no VITE_API_URL needed!
+const API_BASE = '/api'
 
-// Log API base for debugging
 console.log('🔗 API Base URL:', API_BASE)
-console.log('🔗 VITE_API_URL:', import.meta.env.VITE_API_URL)
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -107,7 +106,7 @@ function App() {
       })
     } catch (err) {
       console.error('Failed to load options:', err)
-      alert('⚠️ Failed to load verticals/exams/subjects. Backend API not accessible.\n\nPlease check:\n1. Backend is deployed\n2. VITE_API_URL is set in Vercel\n3. Backend URL is correct')
+      alert('⚠️ Failed to load verticals/exams/subjects. Please refresh the page or check your connection.')
     }
   }
 
