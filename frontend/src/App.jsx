@@ -626,6 +626,23 @@ function App() {
                     <option value="Motivational_or_Fun">Motivational or Fun</option>
                   </select>
                 </div>
+
+                {itemForm.contentType === 'Content' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Content Sub-category *</label>
+                    <select
+                      value={itemForm.contentSubcategory}
+                      onChange={(e) => setItemForm({ ...itemForm, contentSubcategory: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Select Sub-category</option>
+                      {options.content_subcategories?.map(sc => (
+                        <option key={sc} value={sc}>{sc}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Vertical Name *</label>
@@ -672,23 +689,6 @@ function App() {
                   </select>
                 </div>
                 
-                {itemForm.contentType === 'Content' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Content Sub-category *</label>
-                    <select
-                      value={itemForm.contentSubcategory}
-                      onChange={(e) => setItemForm({ ...itemForm, contentSubcategory: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Select Sub-category</option>
-                      {options.content_subcategories?.map(sc => (
-                        <option key={sc} value={sc}>{sc}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
                   <select
@@ -711,12 +711,11 @@ function App() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">📹 Upload Video File *</label>
                     <input
                       type="file"
-                      accept="video/*"
+                      accept="video/*,.mp4,.mov,.avi,.mkv"
                       onChange={(e) => setItemForm({ ...itemForm, videoFile: e.target.files[0] })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      required
                     />
-                    <p className="text-xs text-gray-500 mt-1">Video will be uploaded to S3 for re-editing</p>
+                    <p className="text-xs text-gray-500 mt-1">Upload any size video - unlimited S3 storage</p>
                   </div>
                 )}
                 

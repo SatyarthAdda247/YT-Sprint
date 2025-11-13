@@ -15,6 +15,10 @@ from master_data import get_all_verticals, get_exams_by_vertical, get_subjects_b
 load_dotenv('../.env.local')
 
 app = Flask(__name__)
+
+# Remove default file size limit
+app.config['MAX_CONTENT_LENGTH'] = None  # Unlimited upload size
+
 CORS(app, resources={
     r"/api/*": {
         "origins": "*",
@@ -95,17 +99,24 @@ def put_s3_object(key, data):
         return False
 
 def upload_file_to_s3(file, item_id, user_name):
-    """Upload file to S3"""
+    """Upload file to S3 - No size limit"""
     try:
         filename = secure_filename(file.filename)
         timestamp = int(time.time())
         key = f"files/{user_name}/{item_id}/{timestamp}_{filename}"
         
+        # Multipart upload for large files (handles unlimited size)
         s3.upload_fileobj(
             file,
             S3_BUCKET_NAME,
             key,
-            ExtraArgs={'ContentType': file.content_type or 'application/octet-stream'}
+            ExtraArgs={'ContentType': file.content_type or 'application/octet-stream'},
+            Config=boto3.s3.transfer.TransferConfig(
+                multipart_threshold=1024 * 25,  # 25MB
+                max_concurrency=10,
+                multipart_chunksize=1024 * 25,
+                use_threads=True
+            )
         )
         return key
     except Exception as e:
