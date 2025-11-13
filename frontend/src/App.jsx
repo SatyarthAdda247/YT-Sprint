@@ -156,23 +156,10 @@ function App() {
   const handleAddItem = async (e) => {
     e.preventDefault()
     
-    // For Re-edit status, verification link is optional but video file is required
-    if (itemForm.status === 'Re-edit') {
-      if (!itemForm.videoFile) {
-        alert('Please upload a video file for Re-edit status')
-        return
-      }
-      // Check file size (20MB limit)
-      if (itemForm.videoFile.size > 20 * 1024 * 1024) {
-        alert('⚠️ Video file must be under 20MB')
-        return
-      }
-    } else {
-      // For other statuses, verification link is required
-      if (!linkVerified && itemForm.verificationLink) {
-        alert('Please verify the link first by clicking "Check Link"')
-        return
-      }
+    // Verification link check
+    if (!linkVerified && itemForm.verificationLink) {
+      alert('Please verify the link first by clicking "Check Link"')
+      return
     }
     
     try {
@@ -215,13 +202,24 @@ function App() {
       loadItems()
     } catch (err) {
       console.error('Save error:', err)
-      const errorMsg = err.response?.data?.error || err.message || 'Failed to save item'
+      let errorMsg = 'Failed to save item'
+      
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          errorMsg = err.response.data
+        } else if (err.response.data.error) {
+          errorMsg = err.response.data.error
+        }
+      } else if (err.message) {
+        errorMsg = err.message
+      }
+      
       if (err.response?.status === 403) {
         alert('❌ Not authorized: You can only edit items you created')
       } else if (err.response?.status === 413) {
-        alert('❌ File too large. Maximum 20MB allowed.')
+        alert('❌ Request too large. Please ensure:\n• Video link is provided (not file upload)\n• All fields are filled correctly')
       } else {
-        alert('❌ Error: ' + errorMsg)
+        alert('❌ ' + errorMsg)
       }
     }
   }
@@ -598,7 +596,7 @@ function App() {
               
               <form onSubmit={handleAddItem} className="space-y-4">
                 <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">🔍 Verification Link {itemForm.status !== 'Re-edit' && '*'}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">🔍 YouTube Shorts Link *</label>
                   <div className="flex gap-2">
                     <input
                       type="url"
@@ -609,7 +607,7 @@ function App() {
                       }}
                       placeholder="https://youtube.com/shorts/..."
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      required={itemForm.status !== 'Re-edit'}
+                      required
                     />
                     <button
                       type="button"
@@ -710,32 +708,17 @@ function App() {
                     required
                   >
                     <option value="">Select Status</option>
-                    <option value="Draft">Draft</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Re-edit">Re-edit</option>
                     <option value="Final">Final</option>
-                    <option value="Published">Published</option>
+                    <option value="Re-edit">Re-edit</option>
                   </select>
                 </div>
                 
                 {itemForm.status === 'Re-edit' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">📹 Upload Video File *</label>
-                    <input
-                      type="file"
-                      accept="video/*,.mp4,.mov,.avi,.mkv"
-                      onChange={(e) => {
-                        const file = e.target.files[0]
-                        if (file && file.size > 20 * 1024 * 1024) {
-                          alert('⚠️ File size must be under 20MB for shorts')
-                          e.target.value = ''
-                          return
-                        }
-                        setItemForm({ ...itemForm, videoFile: file })
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Max 20MB for shorts - Upload to S3</p>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800 mb-2">
+                      ℹ️ For Re-edit status, provide the YouTube link of the video that needs re-editing.
+                      File upload feature coming soon.
+                    </p>
                   </div>
                 )}
                 
