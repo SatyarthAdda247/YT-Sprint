@@ -170,6 +170,7 @@ class handler(BaseHTTPRequestHandler):
                 'subject': data.get('subject', ''),
                 'status': status,
                 'contentSubcategory': data.get('contentSubcategory', ''),
+                'driveLink': data.get('driveLink', ''),
                 'files': [],
                 'videoFile': None,
                 'created_by': user_email,
@@ -244,6 +245,7 @@ class handler(BaseHTTPRequestHandler):
                 'status': data.get('status', existing_item.get('status')),
                 'contentSubcategory': data.get('contentSubcategory', existing_item.get('contentSubcategory')),
                 'verificationLink': data.get('verificationLink', existing_item.get('verificationLink')),
+                'driveLink': data.get('driveLink', existing_item.get('driveLink')),
                 'updated_at': datetime.now().isoformat()
             })
             

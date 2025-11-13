@@ -35,7 +35,7 @@ function App() {
   // Form
   const [itemForm, setItemForm] = useState({
     verificationLink: '', contentType: '', vertical: '', 
-    exam: '', subject: '', status: '', contentSubcategory: '', videoFile: null, files: []
+    exam: '', subject: '', status: '', contentSubcategory: '', driveLink: '', videoFile: null, files: []
   })
   const [linkVerified, setLinkVerified] = useState(false)
 
@@ -164,16 +164,17 @@ function App() {
     
     try {
       // For now, send as JSON (file upload will be added later with S3 presigned URLs)
-      const payload = {
-        email: userEmail,
-        verificationLink: itemForm.verificationLink || '',
-        contentType: itemForm.contentType,
-        vertical: itemForm.vertical,
-        exam: itemForm.exam,
-        subject: itemForm.subject,
-        status: itemForm.status,
-        contentSubcategory: itemForm.contentSubcategory
-      }
+            const payload = {
+              email: userEmail,
+              verificationLink: itemForm.verificationLink || '',
+              contentType: itemForm.contentType,
+              vertical: itemForm.vertical,
+              exam: itemForm.exam,
+              subject: itemForm.subject,
+              status: itemForm.status,
+              contentSubcategory: itemForm.contentSubcategory,
+              driveLink: itemForm.driveLink || ''
+            }
       
       if (editingItem) {
         await axios.put(`${API_BASE}/item/${editingItem.id}`, payload, {
@@ -193,7 +194,7 @@ function App() {
       
       setShowAddModal(false)
       setEditingItem(null)
-      setItemForm({ verificationLink: '', contentType: '', vertical: '', exam: '', subject: '', status: '', contentSubcategory: '', videoFile: null, files: [] })
+      setItemForm({ verificationLink: '', contentType: '', vertical: '', exam: '', subject: '', status: '', contentSubcategory: '', driveLink: '', videoFile: null, files: [] })
       setLinkVerified(false)
       
       alert('✅ Entry saved successfully!')
@@ -515,6 +516,7 @@ function App() {
                     <th className="px-6 py-3 font-medium">TYPE / CATEGORY</th>
                     <th className="px-6 py-3 font-medium">EXAM / SUBJECT</th>
                     <th className="px-6 py-3 font-medium">VIDEO LINK</th>
+                    <th className="px-6 py-3 font-medium">DRIVE LINK</th>
                     <th className="px-6 py-3 font-medium">STATUS</th>
                   </tr>
                 </thead>
@@ -553,6 +555,20 @@ function App() {
                             📹 Video File
                           </button>
                         ) : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        {item.driveLink ? (
+                          <a
+                            href={item.driveLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-green-600 hover:text-green-700 underline font-medium"
+                          >
+                            📂 Drive
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <button
@@ -716,25 +732,32 @@ function App() {
                 {itemForm.status === 'Re-edit' && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <p className="text-sm font-medium text-blue-900 mb-2">
-                      📹 Upload Video for Re-editing
+                      📹 For Re-editing: Upload video to your Drive
                     </p>
-                    <p className="text-sm text-blue-700 mb-3">
-                      Upload your video file (max 20MB) to Google Drive, then paste the YouTube link below.
-                    </p>
-                    <a
-                      href="https://drive.google.com/drive/folders/1mIFaECu0YQ80tGDRiguYA7A4J4Hlefgy?usp=drive_link"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
-                    >
-                      <span>📤</span>
-                      Upload Video to Drive
-                    </a>
-                    <p className="text-xs text-blue-600 mt-2">
-                      Opens in new tab • Max 20MB for shorts
+                    <p className="text-xs text-blue-600 mb-3">
+                      Upload your video (max 20MB) to your own Google Drive folder, then paste the Drive link below
                     </p>
                   </div>
                 )}
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📂 Google Drive Link {itemForm.status === 'Re-edit' && '*'}
+                  </label>
+                  <input
+                    type="url"
+                    value={itemForm.driveLink}
+                    onChange={(e) => setItemForm({ ...itemForm, driveLink: e.target.value })}
+                    placeholder="https://drive.google.com/..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    required={itemForm.status === 'Re-edit'}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {itemForm.status === 'Re-edit' 
+                      ? '⚠️ Required for Re-edit status. Share your Drive folder/file link here.'
+                      : 'Optional: Add your own Drive link for video backup'}
+                  </p>
+                </div>
                 
                 <div className="flex gap-3 pt-4">
                   <button
